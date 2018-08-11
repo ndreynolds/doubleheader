@@ -8,17 +8,7 @@ import Material
 import Model exposing (Model, Msg(..), init)
 import Model.GameState exposing (gameIdDecoder, gameStateDecoder)
 import Phoenix.Socket
-import Socket exposing (initSocket)
 import View exposing (view)
-
-
----- MODEL ----
----- UPDATE ----
-
-
-userParams : String -> JE.Value
-userParams username =
-    JE.object [ ( "username", JE.string username ) ]
 
 
 onJoinLobby : JE.Value -> Msg
@@ -31,9 +21,14 @@ onJoinLobby response =
             ShowError error
 
 
-onJoinGame : JE.Value -> Msg
-onJoinGame response =
-    NewGameState response
+onNewGameState : JE.Value -> Msg
+onNewGameState response =
+    case JD.decodeValue gameStateDecoder response of
+        Ok gameState ->
+            NewGameState gameState
+
+        Err error ->
+            ShowError error
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -52,7 +47,7 @@ update msg model =
         JoinLobby ->
             let
                 channel =
-                    Channel.joinLobby (userParams model.username) onJoinLobby
+                    Channel.joinLobby model.username onJoinLobby
 
                 ( socket, cmd ) =
                     Phoenix.Socket.join channel model.socket
@@ -62,38 +57,33 @@ update msg model =
         JoinGame gameId ->
             let
                 channel =
-                    Channel.joinGame gameId (userParams model.username) onJoinGame
+                    Channel.joinGame model.username onNewGameState gameId
+
+                topic =
+                    "game:" ++ toString gameId
 
                 ( socket, cmd ) =
-                    Phoenix.Socket.join channel model.socket
-
-                newSocket =
-                    Socket.subscribeToGameUpdates gameId NewGameState socket
+                    model.socket
+                        |> Phoenix.Socket.on "update" topic onNewGameState
+                        |> Phoenix.Socket.join channel
             in
-            ( { model | socket = newSocket }, Cmd.map SocketMessage cmd )
+            ( { model | socket = socket }, Cmd.map SocketMessage cmd )
 
         Action action ->
             case model.gameState of
-                Just gameState ->
+                Just { id } ->
                     let
-                        push =
-                            Channel.pushGameAction gameState.id action
-
                         ( socket, cmd ) =
-                            Phoenix.Socket.push push model.socket
+                            model.socket
+                                |> Phoenix.Socket.push (Channel.pushGameAction id action)
                     in
                     ( { model | socket = socket }, Cmd.map SocketMessage cmd )
 
                 Nothing ->
                     update (ShowError "Action fired without an active game") model
 
-        NewGameState raw ->
-            case JD.decodeValue gameStateDecoder raw of
-                Ok gameState ->
-                    ( { model | gameState = Just gameState }, Cmd.none )
-
-                Err error ->
-                    update (ShowError error) model
+        NewGameState gameState ->
+            ( { model | gameState = Just gameState }, Cmd.none )
 
         ShowError error ->
             Debug.log error
@@ -107,8 +97,8 @@ update msg model =
 
 
 subscriptions : Model -> Sub Msg
-subscriptions model =
-    Phoenix.Socket.listen model.socket SocketMessage
+subscriptions { socket } =
+    Phoenix.Socket.listen socket SocketMessage
 
 
 main : Program Never Model Msg

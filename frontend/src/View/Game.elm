@@ -34,18 +34,18 @@ cardFrontView attrs card =
 
 
 cardBackView : List (Attribute Msg) -> Card -> Html Msg
-cardBackView attrs card =
-    cardBaseView attrs [ src "/cards/back.png" ] card
+cardBackView attrs =
+    cardBaseView attrs [ src "/cards/back.png" ]
 
 
 concealedHandView : List Card -> Html Msg
 concealedHandView hand =
-    div [ class "hand" ] (List.map (\c -> cardBackView [] c) hand)
+    div [ class "hand" ] (List.map (cardBackView []) hand)
 
 
 visibleHandView : List Card -> Html Msg
 visibleHandView hand =
-    div [ class "hand" ] (List.map (\c -> cardFrontView [] c) hand)
+    div [ class "hand" ] (List.map (cardFrontView []) hand)
 
 
 activeHandView : List Card -> Html Msg
@@ -55,7 +55,7 @@ activeHandView hand =
 
 deckView : List Card -> Html Msg
 deckView deck =
-    div [ class "deck" ] (List.map (\c -> cardBackView [] c) deck)
+    div [ class "deck" ] (List.map (cardBackView []) deck)
 
 
 playerView : Maybe Player -> String -> Html Msg

@@ -1,7 +1,7 @@
 module Model.Card exposing (Card, cardDecoder, encodeCard)
 
-import Json.Decode exposing (Decoder, andThen, fail, field, map2, string, succeed)
-import Json.Encode exposing (Value, object)
+import Json.Decode as JD exposing (andThen, fail, field, map2, string, succeed)
+import Json.Encode as JE
 
 
 type alias Card =
@@ -24,7 +24,7 @@ type Suit
     | Spades
 
 
-encodeCard : Card -> Value
+encodeCard : Card -> JE.Value
 encodeCard ( rank, suit ) =
     let
         rankVal =
@@ -33,13 +33,13 @@ encodeCard ( rank, suit ) =
         suitVal =
             String.toLower (toString suit)
     in
-    object
-        [ ( "rank", Json.Encode.string rankVal )
-        , ( "suit", Json.Encode.string suitVal )
+    JE.object
+        [ ( "rank", JE.string rankVal )
+        , ( "suit", JE.string suitVal )
         ]
 
 
-rankDecoder : String -> Decoder Rank
+rankDecoder : String -> JD.Decoder Rank
 rankDecoder rank =
     case rank of
         "ace" ->
@@ -64,7 +64,7 @@ rankDecoder rank =
             fail ("invalid rank: " ++ rank)
 
 
-suitDecoder : String -> Decoder Suit
+suitDecoder : String -> JD.Decoder Suit
 suitDecoder suit =
     case suit of
         "clubs" ->
@@ -83,7 +83,7 @@ suitDecoder suit =
             fail ("invalid suit: " ++ suit)
 
 
-cardDecoder : Decoder Card
+cardDecoder : JD.Decoder Card
 cardDecoder =
     map2 (,)
         (field "rank" string |> andThen rankDecoder)

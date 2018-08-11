@@ -1,6 +1,6 @@
 module Model.PlayerAction exposing (..)
 
-import Json.Encode exposing (Value, string)
+import Json.Encode as JE
 import Model.Card exposing (Card, encodeCard)
 
 
@@ -14,7 +14,7 @@ type BidValue
     | Marriage --| Poverty | Solo SoloType
 
 
-encodePlayerAction : PlayerAction -> ( String, Value )
+encodePlayerAction : PlayerAction -> ( String, JE.Value )
 encodePlayerAction action =
     ( encodePlayerActionType action, encodePlayerActionValue action )
 
@@ -29,14 +29,14 @@ encodePlayerActionType action =
             "play"
 
 
-encodePlayerActionValue : PlayerAction -> Value
+encodePlayerActionValue : PlayerAction -> JE.Value
 encodePlayerActionValue action =
     case action of
         Bid Healthy ->
-            string "healthy"
+            JE.string "healthy"
 
         Bid Marriage ->
-            string "marriage"
+            JE.string "marriage"
 
         Play card ->
             encodeCard card

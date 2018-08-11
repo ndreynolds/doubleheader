@@ -1,23 +1,28 @@
 module Channel exposing (joinGame, joinLobby, pushGameAction)
 
-import Json.Encode exposing (Value)
+import Json.Encode as JE
 import Model.GameState exposing (GameId)
 import Model.PlayerAction exposing (PlayerAction, encodePlayerAction)
 import Phoenix.Channel exposing (Channel)
 import Phoenix.Push exposing (Push)
 
 
-joinLobby : Value -> (Value -> msg) -> Channel msg
-joinLobby userParams onJoin =
+userParams : String -> JE.Value
+userParams username =
+    JE.object [ ( "username", JE.string username ) ]
+
+
+joinLobby : String -> (JE.Value -> msg) -> Channel msg
+joinLobby username onJoin =
     Phoenix.Channel.init "game:lobby"
-        |> Phoenix.Channel.withPayload userParams
+        |> Phoenix.Channel.withPayload (userParams username)
         |> Phoenix.Channel.onJoin onJoin
 
 
-joinGame : GameId -> Value -> (Value -> msg) -> Channel msg
-joinGame gameId userParams onJoin =
+joinGame : String -> (JE.Value -> msg) -> GameId -> Channel msg
+joinGame username onJoin gameId =
     Phoenix.Channel.init ("game:" ++ toString gameId)
-        |> Phoenix.Channel.withPayload userParams
+        |> Phoenix.Channel.withPayload (userParams username)
         |> Phoenix.Channel.onJoin onJoin
 
 
@@ -28,7 +33,7 @@ pushGameAction gameId action =
             encodePlayerAction action
 
         payload =
-            Json.Encode.object [ ( "value", actionValue ) ]
+            JE.object [ ( "value", actionValue ) ]
 
         event =
             "action:" ++ actionType

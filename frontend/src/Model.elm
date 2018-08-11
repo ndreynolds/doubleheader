@@ -4,13 +4,12 @@ import Json.Encode as JE
 import Material
 import Model.GameState exposing (GameState)
 import Model.PlayerAction exposing (PlayerAction)
-import Phoenix.Socket
-import Socket exposing (initSocket)
+import Phoenix.Socket exposing (Socket)
 
 
 type Msg
     = SocketMessage (Phoenix.Socket.Msg Msg)
-    | NewGameState JE.Value
+    | NewGameState GameState
     | JoinLobby
     | JoinGame Int
     | SetUsername String
@@ -28,6 +27,12 @@ type alias Model =
     , tab : Int
     , mdl : Material.Model
     }
+
+
+initSocket : Socket Msg
+initSocket =
+    Phoenix.Socket.init "ws://localhost:4000/socket/websocket"
+        |> Phoenix.Socket.withDebug
 
 
 init : ( Model, Cmd Msg )
