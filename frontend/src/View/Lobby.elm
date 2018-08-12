@@ -42,5 +42,6 @@ lobbyView { mdl, username } =
             [ h2 [] [ text "Doppelkopf" ]
             , usernameField mdl username
             , submitBtn mdl
+            , Html.node "mwc-button" [] [text "Hello"]
             ]
         ]
