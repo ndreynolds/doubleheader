@@ -1,56 +1,18 @@
-module View.Game exposing (gameView)
+module View.Game exposing (tabbedView)
 
-import Html exposing (Attribute, Html, button, div, h1, h2, img, input, table, td, text, tr)
-import Html.Attributes exposing (class, src, value)
-import Html.Events exposing (onClick, onInput)
-import Material.Table as Table
-import Material.Tabs as Tabs
+import Html exposing (Attribute, Html, a, button, div, li, text, ul)
+import Html.Attributes exposing (class, href)
+import Html.Events exposing (onClick)
 import Model exposing (Model, Msg(..))
 import Model.Card exposing (Card)
-import Model.GameState exposing (GameState, availableActions)
+import Model.GameState exposing (GameState, PlayerTuple, availableActions)
 import Model.Player exposing (Player)
 import Model.PlayerAction exposing (PlayerAction(..))
 import Model.Status exposing (Status)
-import Model.Trick exposing (IncompleteTrick, ScoredTrick)
-
-
-cardBaseView : List (Attribute Msg) -> List (Attribute Msg) -> Card -> Html Msg
-cardBaseView wrapperAttrs imgAttrs card =
-    div ([ class "card" ] ++ wrapperAttrs)
-        [ img imgAttrs []
-        ]
-
-
-cardFrontView : List (Attribute Msg) -> Card -> Html Msg
-cardFrontView attrs card =
-    let
-        ( rank, suit ) =
-            card
-
-        imgSrc =
-            "/cards/" ++ toString rank ++ "_of_" ++ toString suit ++ ".png"
-    in
-    cardBaseView attrs [ src imgSrc ] card
-
-
-cardBackView : List (Attribute Msg) -> Card -> Html Msg
-cardBackView attrs =
-    cardBaseView attrs [ src "/cards/back.png" ]
-
-
-concealedHandView : List Card -> Html Msg
-concealedHandView hand =
-    div [ class "hand" ] (List.map (cardBackView []) hand)
-
-
-visibleHandView : List Card -> Html Msg
-visibleHandView hand =
-    div [ class "hand" ] (List.map (cardFrontView []) hand)
-
-
-activeHandView : List Card -> Html Msg
-activeHandView hand =
-    div [ class "hand" ] (List.map (\c -> cardFrontView [ onClick (Action (Play c)), class "selectable" ] c) hand)
+import View.Card exposing (cardBackView)
+import View.Hand exposing (activeHandView, concealedHandView)
+import View.Trick exposing (currentTrickView, scoredTricksView)
+import View.UI as UI
 
 
 deckView : List Card -> Html Msg
@@ -58,42 +20,42 @@ deckView deck =
     div [ class "deck" ] (List.map (cardBackView []) deck)
 
 
-playerView : Maybe Player -> String -> Html Msg
-playerView player username =
-    case player of
-        Just { name, hand, score } ->
-            let
-                scoreText =
-                    " (" ++ toString score ++ ")"
+playerView : Maybe Player -> Bool -> Html Msg
+playerView player active =
+    let
+        handView =
+            if active then
+                activeHandView (\c -> Action (Play c))
+            else
+                concealedHandView
 
-                handView_ =
-                    if name == username then
-                        activeHandView hand
-                    else
-                        concealedHandView hand
-            in
-            div [ class "player" ]
-                [ handView_
-                , div [ class "name" ] [ text name, text scoreText ]
-                ]
+        ( hand, name, score ) =
+            case player of
+                Just { name, hand, score } ->
+                    ( hand, name, score )
 
-        Nothing ->
-            div [ class "player" ]
-                [ div [ class "name" ] [ text "Empty Seat" ]
-                ]
+                Nothing ->
+                    ( [], "Empty Seat", 0 )
+
+        label =
+            toString name ++ " (" ++ toString score ++ ")"
+    in
+    div [ class "player" ]
+        [ handView hand
+        , div [ class "name" ] [ text label ]
+        ]
 
 
 actionView : PlayerAction -> Html Msg
 actionView action =
-    button [ onClick (Action action) ] [ text (toString action) ]
+    li [ class "menu-item" ]
+        [ a [ href "#", onClick (Action action) ] [ text (toString action) ]
+        ]
 
 
 actionsView : Maybe Player -> Status -> Html Msg
 actionsView player status =
     let
-        statusText =
-            toString status
-
         actions =
             case player of
                 Just player ->
@@ -101,55 +63,19 @@ actionsView player status =
 
                 Nothing ->
                     []
-    in
-    div [ class "actions" ]
-        ([ text statusText ]
-            ++ List.map actionView actions
-        )
 
-
-currentTrickView : IncompleteTrick -> Html Msg
-currentTrickView ( a, b, c, d ) =
-    let
-        maybeCardView card =
-            case card of
-                Just card ->
-                    cardFrontView [] card
-
-                Nothing ->
-                    div [] []
-    in
-    div [ class "trick" ]
-        [ maybeCardView (Maybe.map Tuple.second d)
-        , maybeCardView (Maybe.map Tuple.second c)
-        , maybeCardView (Maybe.map Tuple.second b)
-        , maybeCardView (Maybe.map Tuple.second a)
-        ]
-
-
-scoredTrickView : ScoredTrick -> Html Msg
-scoredTrickView ( name, score, ( ( p1, c1 ), ( p2, c2 ), ( p3, c3 ), ( p4, c4 ) ) ) =
-    Table.tr []
-        [ Table.td [] [ text name ]
-        , Table.td [ Table.numeric ] [ text (toString score) ]
-        , Table.td []
-            [ visibleHandView [ c1, c2, c3, c4 ]
-            ]
-        ]
-
-
-scoredTricksView : List ScoredTrick -> Html Msg
-scoredTricksView tricks =
-    Table.table []
-        [ Table.thead []
-            [ Table.tr []
-                [ Table.th [] [ text "Winner" ]
-                , Table.th [] [ text "Score" ]
-                , Table.th [] [ text "Trick" ]
+        header =
+            li [ class "menu-item" ]
+                [ div [ class "tile tile-centered" ]
+                    [ div [ class "tile-content" ] [ text (toString status) ]
+                    ]
                 ]
-            ]
-        , Table.tbody [] (List.map scoredTrickView tricks)
-        ]
+
+        divider =
+            li [ class "divider" ] []
+    in
+    ul [ class "actions menu" ]
+        (header :: divider :: List.map actionView actions)
 
 
 hasName : Maybe Player -> String -> Bool
@@ -162,10 +88,7 @@ hasName maybePlayer name =
             False
 
 
-arrangePlayers :
-    ( Maybe Player, Maybe Player, Maybe Player, Maybe Player )
-    -> String
-    -> ( Maybe Player, ( Maybe Player, Maybe Player, Maybe Player, Maybe Player ) )
+arrangePlayers : PlayerTuple -> String -> ( Maybe Player, PlayerTuple )
 arrangePlayers ( a, b, c, d ) username =
     if hasName a username then
         ( a, ( b, c, d, a ) )
@@ -177,49 +100,64 @@ arrangePlayers ( a, b, c, d ) username =
         ( d, ( a, b, c, d ) )
 
 
-tableView : GameState -> String -> Html Msg
-tableView { deck, currentTrick, players, status } username =
+cardTableView : PlayerTuple -> Html Msg -> Html Msg
+cardTableView ( p1, p2, p3, currentPlayer ) centerpiece =
     let
-        ( currentPlayer, ( p1, p2, p3, p4 ) ) =
+        topSeat =
+            playerView p2 False
+
+        leftSeat =
+            playerView p1 False
+
+        rightSeat =
+            playerView p3 False
+
+        bottomSeat =
+            playerView currentPlayer True
+    in
+    div [ class "card-table" ]
+        [ div [ class "card-table-top" ]
+            [ topSeat ]
+        , div [ class "card-table-center" ]
+            [ leftSeat
+            , div [ class "center" ] [ centerpiece ]
+            , rightSeat
+            ]
+        , div [ class "card-table-bottom" ]
+            [ bottomSeat ]
+        ]
+
+
+gameView : GameState -> String -> Html Msg
+gameView { deck, currentTrick, players, status } username =
+    let
+        ( currentPlayer, arrangedPlayers ) =
             arrangePlayers players username
+
+        centerpiece =
+            if List.isEmpty deck then
+                currentTrickView currentTrick
+            else
+                deckView deck
     in
     div
         [ class "game" ]
-        [ div [ class "table" ]
-            [ div [ class "table-top" ]
-                [ playerView p2 username ]
-            , div [ class "table-center" ]
-                [ playerView p1 username
-                , deckView deck
-                , currentTrickView currentTrick
-                , playerView p3 username
-                ]
-            , div [ class "table-bottom" ]
-                [ playerView currentPlayer username ]
-            ]
+        [ cardTableView arrangedPlayers centerpiece
         , actionsView currentPlayer status
         ]
 
 
-gameView : Model -> Html Msg
-gameView model =
-    Tabs.render Mdl
-        [ 0 ]
-        model.mdl
-        [ Tabs.ripple
-        , Tabs.onSelectTab SelectTab
-        , Tabs.activeTab model.tab
-        ]
-        [ Tabs.label
-            []
-            [ text "Game" ]
-        , Tabs.label
-            []
-            [ text "Tricks" ]
-        ]
-        [ case ( model.gameState, model.tab ) of
+tabbedView : Model -> Html Msg
+tabbedView model =
+    div []
+        [ UI.tabs
+            { selectedIndex = model.tab, onSelect = SelectTab }
+            [ text "Game"
+            , text "Tricks"
+            ]
+        , case ( model.gameState, model.tab ) of
             ( Just gameState, 0 ) ->
-                tableView gameState model.username
+                gameView gameState model.username
 
             ( Just gameState, 1 ) ->
                 scoredTricksView gameState.scoredTricks

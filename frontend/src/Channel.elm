@@ -1,4 +1,4 @@
-module Channel exposing (joinGame, joinLobby, pushGameAction)
+module Channel exposing (join, pushGameAction)
 
 import Json.Encode as JE
 import Model.GameState exposing (GameId)
@@ -7,27 +7,29 @@ import Phoenix.Channel exposing (Channel)
 import Phoenix.Push exposing (Push)
 
 
+type alias ChannelJoinOptions msg =
+    { onJoin : JE.Value -> msg
+    , onJoinError : JE.Value -> msg
+    , username : String
+    , topic : String
+    }
+
+
 userParams : String -> JE.Value
 userParams username =
     JE.object [ ( "username", JE.string username ) ]
 
 
-joinLobby : String -> (JE.Value -> msg) -> Channel msg
-joinLobby username onJoin =
-    Phoenix.Channel.init "game:lobby"
+join : ChannelJoinOptions msg -> Channel msg
+join { onJoin, onJoinError, username, topic } =
+    Phoenix.Channel.init topic
         |> Phoenix.Channel.withPayload (userParams username)
         |> Phoenix.Channel.onJoin onJoin
+        |> Phoenix.Channel.onJoinError onJoinError
 
 
-joinGame : String -> (JE.Value -> msg) -> GameId -> Channel msg
-joinGame username onJoin gameId =
-    Phoenix.Channel.init ("game:" ++ toString gameId)
-        |> Phoenix.Channel.withPayload (userParams username)
-        |> Phoenix.Channel.onJoin onJoin
-
-
-pushGameAction : GameId -> PlayerAction -> Push msg
-pushGameAction gameId action =
+pushGameAction : GameId -> PlayerAction -> (JE.Value -> msg) -> Push msg
+pushGameAction gameId action onError =
     let
         ( actionType, actionValue ) =
             encodePlayerAction action
@@ -43,3 +45,4 @@ pushGameAction gameId action =
     in
     Phoenix.Push.init event topic
         |> Phoenix.Push.withPayload payload
+        |> Phoenix.Push.onError onError

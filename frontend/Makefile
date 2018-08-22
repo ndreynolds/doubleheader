@@ -1,12 +1,22 @@
-ELM_FILES := $(shell find . -name "*.elm")
+ELM_FILES := $(shell find src -name "*.elm")
+ELM_MAIN := src/Main.elm
 
-assets: public/app.js public/web-components.js public/app.css
+SASS_FILES := $(shell find styles -name "*.scss")
+SASS_MAIN := styles/app.scss
 
-public/app.js: $(ELM_FILES)
-	elm make src/Main.elm --warn --output $@
+PORT := 8000
 
-public/web-components.js: web-components/index.js
-	web-components/node_modules/.bin/webpack-cli $< -o $@
+assets: public/bundle.js public/bundle.css
 
-public/app.css: styles/app.scss
-	sassc $< $@
+public/bundle.js: $(ELM_FILES)
+	elm make $(ELM_MAIN) --debug --warn --output $@
+
+public/bundle.css: $(SASS_FILES)
+	sassc $(SASS_MAIN) $@
+
+serve: assets
+	cd public && python -m SimpleHTTPServer $(PORT)
+
+develop: assets
+	fswatch -0 src/* styles/* | xargs -0 -n1 -I '{}' make &
+	cd public && python -m SimpleHTTPServer $(PORT)

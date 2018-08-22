@@ -1,4 +1,4 @@
-$card-width: 6rem;
+$card-width: 5rem;
 $card-height: $card-width * 2;
 $card-thickness: $card-width / 20rem;
 
@@ -12,11 +12,6 @@ body {
 
 #root {
   height: 100%;
-}
-
-.lobby {
-  display: flex;
-  justify-content: center;
 }
 
 .game {
@@ -41,12 +36,11 @@ body {
 .hand {
   position: relative;
   height: $card-height;
-  width: 30rem;
+  width: $card-width * 4;
 
   .card {
     position: absolute;
     transition: 0.1s ease-in-out;
-
 
     @for $n from 1 through 12 {
       &:nth-child(#{$n}) {
@@ -63,6 +57,7 @@ body {
 .deck {
   position: relative;
   height: $card-height;
+  width: $card-width * 1.2;
 
   .card {
     position: absolute;
@@ -91,41 +86,71 @@ body {
   }
 }
 
-.table {
+.card-table {
   display: flex;
   flex-direction: column;
   justify-content: center;
   height: 100%;
   padding: 20px;
 
-  .table-top {
+  .card-table-top {
     display: flex;
     justify-content: center;
 
-    .player {
-      // transform: translateY(-20%) rotate(180deg);
-      // .name {
-      //   transform: translateX(-80%) rotate(180deg);
-      // }
+    .player:first-child {
+      transform: scale(0.8);
     }
   }
-  .table-center {
+
+  .card-table-center {
     display: flex;
     flex-direction: row;
     justify-content: space-between;
-    // flex: 1 0 auto;
+
+    .center {
+      flex: 1 1 auto;
+      height: $card-height;
+      display: flex;
+      flex-direction: row;
+      justify-content: center;
+    }
 
     .player:first-child {
       align-self: flex-start;
-      // transform: translate(-15%) rotate(90deg);
+      transform: scale(0.8);
     }
     .player:last-child {
       align-self: flex-end;
-      // transform: translate(15%) rotate(-90deg);
+      transform: scale(0.8);
     }
   }
-  .table-bottom {
+
+  .card-table-bottom {
     display: flex;
     justify-content: center;
+  }
+
+  .player .name {
+    text-align: center;
+  }
+}
+
+.actions {
+  position: fixed;
+  bottom: 0;
+}
+
+@keyframes slideIn {
+  from { transform: translateY(20px); }
+  to { transform: translateY(0); }
+}
+
+.errors {
+  position: absolute;
+  bottom: 20px;
+
+  .toast {
+    animation: slideIn 0.2s ease-in-out;
+    margin-top: 10px;
   }
 }

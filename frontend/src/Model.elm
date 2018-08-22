@@ -1,22 +1,22 @@
 module Model exposing (Model, Msg(..), init)
 
-import Json.Encode as JE
-import Material
 import Model.GameState exposing (GameState)
 import Model.PlayerAction exposing (PlayerAction)
 import Phoenix.Socket exposing (Socket)
+import Time exposing (Time)
 
 
 type Msg
     = SocketMessage (Phoenix.Socket.Msg Msg)
     | NewGameState GameState
     | JoinLobby
+    | LeaveLobby String
     | JoinGame Int
     | SetUsername String
     | Action PlayerAction
     | ShowError String
+    | ExpireErrors
     | SelectTab Int
-    | Mdl (Material.Msg Msg)
 
 
 type alias Model =
@@ -25,7 +25,7 @@ type alias Model =
     , username : String
     , registered : Bool
     , tab : Int
-    , mdl : Material.Model
+    , errors : List ( String, Time )
     }
 
 
@@ -42,7 +42,7 @@ init =
       , username = ""
       , registered = False
       , tab = 0
-      , mdl = Material.model
+      , errors = []
       }
     , Cmd.none
     )

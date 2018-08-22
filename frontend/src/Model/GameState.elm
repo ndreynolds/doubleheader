@@ -2,6 +2,7 @@ module Model.GameState
     exposing
         ( GameId
         , GameState
+        , PlayerTuple
         , availableActions
         , gameIdDecoder
         , gameStateDecoder
@@ -24,13 +25,17 @@ import Model.Trick
 
 
 type alias GameState =
-    { id : Int
+    { id : GameId
     , deck : List Card
-    , players : ( Maybe Player, Maybe Player, Maybe Player, Maybe Player )
+    , players : PlayerTuple
     , currentTrick : IncompleteTrick
     , scoredTricks : List ScoredTrick
     , status : Status
     }
+
+
+type alias PlayerTuple =
+    ( Maybe Player, Maybe Player, Maybe Player, Maybe Player )
 
 
 type alias GameId =

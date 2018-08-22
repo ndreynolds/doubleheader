@@ -1,5 +1,8 @@
-FROM codesimple/elm:0.18
+FROM node:10.9-alpine
 
-RUN npm --quiet install -g create-elm-app
+RUN apk add --no-cache python make
+RUN yarn global add elm@0.18.0
+
 COPY . .
-ENTRYPOINT ["elm-app", "start"]
+
+ENTRYPOINT ["make", "serve"]

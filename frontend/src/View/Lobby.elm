@@ -1,47 +1,44 @@
 module View.Lobby exposing (lobbyView)
 
 import Html exposing (Html, button, div, h2, input, text)
-import Html.Attributes exposing (class, value)
+import Html.Attributes exposing (class, placeholder, value)
 import Html.Events exposing (onClick, onInput)
-import Material
-import Material.Button as Button
-import Material.Options as Options
-import Material.Textfield as Textfield
 import Model exposing (Model, Msg(..))
+import View.UI as UI exposing (ColumnAlignment(..))
 
 
-usernameField : Material.Model -> String -> Html Msg
-usernameField mdl username =
-    Textfield.render
-        Mdl
-        [ 1 ]
-        mdl
-        [ Textfield.label "Enter a username"
-        , Textfield.value username
-        , Options.onInput SetUsername
+usernameField : String -> Html Msg
+usernameField username =
+    input
+        [ onInput SetUsername
+        , value username
+        , placeholder "Enter a username..."
+        , class "form-input"
         ]
         []
 
 
-submitBtn : Material.Model -> Html Msg
-submitBtn mdl =
-    Button.render Mdl
-        [ 0 ]
-        mdl
-        [ Button.raised
-        , Button.colored
-        , Options.onClick JoinLobby
+submitBtn : Html Msg
+submitBtn =
+    button
+        [ onClick JoinLobby
+        , class "btn btn-primary input-group-btn"
         ]
         [ text "Play" ]
 
 
 lobbyView : Model -> Html Msg
-lobbyView { mdl, username } =
-    div [ class "lobby" ]
-        [ div [ class "lobby-inner" ]
-            [ h2 [] [ text "Doppelkopf" ]
-            , usernameField mdl username
-            , submitBtn mdl
-            , Html.node "mwc-button" [] [text "Hello"]
+lobbyView { username } =
+    UI.grid []
+        [ UI.column { size = 6, align = Center }
+            [ div [ class "panel" ]
+                [ div [ class "panel-header" ] [ h2 [] [ text "Doppelkopf" ] ]
+                , div [ class "panel-footer" ]
+                    [ div [ class "input-group" ]
+                        [ usernameField username
+                        , submitBtn
+                        ]
+                    ]
+                ]
             ]
         ]
